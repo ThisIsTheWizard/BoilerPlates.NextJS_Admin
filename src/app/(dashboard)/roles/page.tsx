@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import {
   ASSIGN_PERMISSION_MUTATION,
   GET_PERMISSIONS_QUERY,
-  REMOVE_PERMISSION_MUTATION,
+  REVOKE_PERMISSION_MUTATION,
   type PermissionsQueryResult,
 } from "@/services/permissions";
 import { GET_ROLES_QUERY, type RolesQueryResult } from "@/services/roles";
@@ -147,8 +147,8 @@ function RoleCard({
   const [assignPermission, { loading: assigning }] = useMutation(
     ASSIGN_PERMISSION_MUTATION
   );
-  const [removePermission, { loading: revoking }] = useMutation(
-    REMOVE_PERMISSION_MUTATION
+  const [revokePermission, { loading: revoking }] = useMutation(
+    REVOKE_PERMISSION_MUTATION
   );
 
   const busy = assigning || revoking;
@@ -158,11 +158,7 @@ function RoleCard({
     () =>
       permissions.filter(
         (permission) =>
-          !assignedPermissions.some(
-            (assigned) =>
-              assigned.id === permission.id &&
-              assigned?.role_permissions?.can_do_the_action
-          )
+          !assignedPermissions.some((assigned) => assigned.id === permission.id)
       ),
     [assignedPermissions, permissions]
   );
@@ -177,9 +173,8 @@ function RoleCard({
       await assignPermission({
         variables: {
           input: {
-            role_id: role.id,
             permission_id: selectedPermission,
-            can_do_the_action: true,
+            role_id: role.id,
           },
         },
       });
@@ -209,7 +204,7 @@ function RoleCard({
     );
 
     try {
-      await removePermission({
+      await revokePermission({
         variables: {
           input: {
             role_id: role.id,
@@ -225,7 +220,7 @@ function RoleCard({
         }.`,
       });
     } catch (error) {
-      console.error("[removePermission]", error);
+      console.error("[revokePermission]", error);
       setBanner({
         type: "error",
         message:

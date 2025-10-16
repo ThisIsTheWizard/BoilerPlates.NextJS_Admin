@@ -18,6 +18,7 @@ import {
   USERS_DEFAULT_OPTIONS,
   type UsersQueryResult,
 } from "@/services/users";
+import { formatDate } from "~/lib/utils";
 
 const DASHBOARD_USERS_OPTIONS = {
   ...USERS_DEFAULT_OPTIONS,
@@ -322,17 +323,6 @@ function buildMonthlyTrend(users: UserRow[], months = 6) {
 function formatName(user: UserRow) {
   const name = [user.first_name, user.last_name].filter(Boolean).join(" ");
   return name.length > 0 ? name : "—";
-}
-
-function formatDate(input?: string | null) {
-  if (!input) return "—";
-  try {
-    const date = new Date(input);
-    if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleDateString();
-  } catch {
-    return "—";
-  }
 }
 
 function formatNumber(value: number | string | null | undefined) {

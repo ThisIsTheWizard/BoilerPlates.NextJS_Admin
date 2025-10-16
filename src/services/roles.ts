@@ -1,22 +1,25 @@
 import { gql } from "@apollo/client";
 import { PermissionsQueryResult } from "./permissions";
+import { UsersQueryResult } from "./users";
 
 export const GET_ROLES_QUERY = gql`
   query GetRoles($options: Options) {
     getRoles(options: $options) {
       data {
         id
+        created_at
         name
         permissions {
           id
           action
+          created_at
           module
-          role_permissions {
-            id
-            can_do_the_action
-          }
+          updated_at
         }
-        created_at
+        updated_at
+        users {
+          id
+        }
       }
       meta_data {
         total_rows
@@ -30,17 +33,14 @@ export const ASSIGN_ROLE_MUTATION = gql`
   mutation AssignRole($input: CreateRoleUserInput!) {
     assignRole(input: $input) {
       id
-      role_id
-      user_id
     }
   }
 `;
 
-export const REMOVE_ROLE_MUTATION = gql`
-  mutation RemoveRole($input: RemoveRoleInput!) {
-    removeRole(input: $input) {
-      success
-      message
+export const REVOKE_ROLE_MUTATION = gql`
+  mutation RevokeRole($input: CreateRoleUserInput!) {
+    revokeRole(input: $input) {
+      id
     }
   }
 `;
@@ -52,6 +52,8 @@ export type RolesQueryResult = {
       created_at?: string | null;
       name: string;
       permissions: PermissionsQueryResult["getPermissions"]["data"];
+      updated_at?: string | null;
+      users: UsersQueryResult["getUsers"]["data"];
     }>;
     meta_data?: {
       total_rows?: number | null;

@@ -21,18 +21,14 @@ export const ASSIGN_PERMISSION_MUTATION = gql`
   mutation AssignPermission($input: CreateRolePermissionInput!) {
     assignPermission(input: $input) {
       id
-      can_do_the_action
-      permission_id
-      role_id
     }
   }
 `;
 
-export const REMOVE_PERMISSION_MUTATION = gql`
-  mutation RemovePermission($input: RemovePermissionInput!) {
-    removePermission(input: $input) {
-      message
-      success
+export const REVOKE_PERMISSION_MUTATION = gql`
+  mutation RevokePermission($input: RemoveRolePermissionInput!) {
+    revokePermission(input: $input) {
+      id
     }
   }
 `;
@@ -42,12 +38,9 @@ export type PermissionsQueryResult = {
     data: Array<{
       id: string;
       action: string;
-      created_at?: string | null;
+      created_at: string;
       module: string;
-      role_permissions: {
-        id: string;
-        can_do_the_action: boolean;
-      };
+      updated_at: string;
     }>;
     meta_data?: {
       filtered_rows?: number | null;

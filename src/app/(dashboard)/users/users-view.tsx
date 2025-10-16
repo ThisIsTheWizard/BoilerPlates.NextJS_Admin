@@ -6,11 +6,11 @@ import { Loader2, RefreshCw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import {
   ASSIGN_ROLE_MUTATION,
   GET_ROLES_QUERY,
-  REMOVE_ROLE_MUTATION,
+  REVOKE_ROLE_MUTATION,
   type RolesQueryResult,
 } from "@/services/roles";
 import {
@@ -26,25 +26,21 @@ const STATUS_STYLES: Record<string, string> = {
   unverified: "bg-amber-50 text-amber-700 border-amber-100",
 };
 
-type BannerState =
-  | {
-      type: "success" | "error";
-      message: string;
-    }
-  | null;
+type BannerState = {
+  type: "success" | "error";
+  message: string;
+} | null;
 
 export function UsersView() {
   const [banner, setBanner] = useState<BannerState>(null);
 
-  const {
-    data,
-    loading,
-    error,
-    refetch,
-  } = useQuery<UsersQueryResult>(GET_USERS_QUERY, {
-    variables: { options: USERS_DEFAULT_OPTIONS },
-    fetchPolicy: "cache-and-network",
-  });
+  const { data, loading, error, refetch } = useQuery<UsersQueryResult>(
+    GET_USERS_QUERY,
+    {
+      variables: { options: USERS_DEFAULT_OPTIONS },
+      fetchPolicy: "cache-and-network",
+    }
+  );
 
   const {
     data: rolesData,
@@ -58,10 +54,7 @@ export function UsersView() {
   const users = data?.getUsers?.data ?? [];
   const meta = data?.getUsers?.meta_data;
 
-  const allRoles = useMemo(
-    () => rolesData?.getRoles?.data ?? [],
-    [rolesData],
-  );
+  const allRoles = useMemo(() => rolesData?.getRoles?.data ?? [], [rolesData]);
 
   const bannerTone =
     banner?.type === "success"
@@ -100,7 +93,7 @@ export function UsersView() {
         <div
           className={cn(
             "flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-sm",
-            bannerTone,
+            bannerTone
           )}
         >
           <p>{banner.message}</p>
@@ -171,7 +164,7 @@ export function UsersView() {
                         className={cn(
                           "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold capitalize",
                           STATUS_STYLES[user.status] ??
-                            "bg-slate-100 text-slate-600 border-slate-200",
+                            "bg-slate-100 text-slate-600 border-slate-200"
                         )}
                       >
                         {user.status}
@@ -184,8 +177,12 @@ export function UsersView() {
                         userName={formatName(user)}
                         currentRoles={user.roles ?? []}
                         allRoles={allRoles}
-                        onSuccess={(message) => setBanner({ type: "success", message })}
-                        onError={(message) => setBanner({ type: "error", message })}
+                        onSuccess={(message) =>
+                          setBanner({ type: "success", message })
+                        }
+                        onError={(message) =>
+                          setBanner({ type: "error", message })
+                        }
                         refetchUsers={refetch}
                         disabled={rolesLoading}
                       />
@@ -230,17 +227,19 @@ function RoleManager({
 }: RoleManagerProps) {
   const [selectedRole, setSelectedRole] = useState<string>("");
 
-  const [assignRole, { loading: assigning }] = useMutation(ASSIGN_ROLE_MUTATION);
-  const [removeRole, { loading: removing }] = useMutation(REMOVE_ROLE_MUTATION);
+  const [assignRole, { loading: assigning }] =
+    useMutation(ASSIGN_ROLE_MUTATION);
+  const [revokeRole, { loading: removing }] = useMutation(REVOKE_ROLE_MUTATION);
 
   const busy = assigning || removing;
 
   const availableRoles = useMemo(
     () =>
       allRoles.filter(
-        (role) => !(currentRoles ?? []).some((assigned) => assigned.id === role.id),
+        (role) =>
+          !(currentRoles ?? []).some((assigned) => assigned.id === role.id)
       ),
-    [allRoles, currentRoles],
+    [allRoles, currentRoles]
   );
 
   const handleAssign = async () => {
@@ -252,33 +251,31 @@ function RoleManager({
         variables: { input: { role_id: selectedRole, user_id: userId } },
       });
       await refetchUsers();
-      onSuccess(
-        `Assigned ${targetRole?.name ?? "role"} to ${userName}.`,
-      );
+      onSuccess(`Assigned ${targetRole?.name ?? "role"} to ${userName}.`);
       setSelectedRole("");
     } catch (error) {
       console.error("[assignRole]", error);
       onError(
         error instanceof Error
           ? error.message
-          : "Unable to assign the selected role.",
+          : "Unable to assign the selected role."
       );
     }
   };
 
-  const handleRemove = async (roleId: string, roleName: string) => {
+  const handleRemove = async (role_id: string, roleName: string) => {
     try {
-      await removeRole({
-        variables: { input: { role_id: roleId, user_id: userId } },
+      await revokeRole({
+        variables: { input: { role_id, user_id: userId } },
       });
       await refetchUsers();
       onSuccess(`Removed ${roleName} from ${userName}.`);
     } catch (error) {
-      console.error("[removeRole]", error);
+      console.error("[revokeRole]", error);
       onError(
         error instanceof Error
           ? error.message
-          : "Unable to remove the selected role.",
+          : "Unable to remove the selected role."
       );
     }
   };
@@ -353,15 +350,4 @@ function RoleManager({
 function formatName(user: UsersRow) {
   const name = [user.first_name, user.last_name].filter(Boolean).join(" ");
   return name.length > 0 ? name : "—";
-}
-
-function formatDate(input?: string | null) {
-  if (!input) return "—";
-  try {
-    const date = new Date(input);
-    if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleDateString();
-  } catch {
-    return "—";
-  }
 }

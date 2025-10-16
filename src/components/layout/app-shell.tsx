@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const userDisplay = useMemo(() => {
     const user = session?.user;
-    console.log({ user });
+
     if (!user) {
       return {
         name: "Guest",
@@ -160,9 +160,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" aria-label="Notifications">
-                <Bell className="h-5 w-5 text-slate-500" />
-              </Button>
               <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-1.5">
                 <div>
                   <p className="text-xs font-semibold text-slate-900">

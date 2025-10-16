@@ -12,6 +12,7 @@ import {
   type PermissionsQueryResult,
 } from "@/services/permissions";
 import { GET_ROLES_QUERY, type RolesQueryResult } from "@/services/roles";
+import { formatDate } from "~/lib/utils";
 
 export default function PermissionsPage() {
   const [search, setSearch] = useState("");
@@ -209,15 +210,4 @@ function RolePillList({ roles }: { roles: string[] }) {
       ))}
     </div>
   );
-}
-
-function formatDate(input?: string | null) {
-  if (!input) return "—";
-  try {
-    const date = new Date(input);
-    if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleDateString();
-  } catch {
-    return "—";
-  }
 }
