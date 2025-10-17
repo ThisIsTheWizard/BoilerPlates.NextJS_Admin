@@ -28,6 +28,36 @@ export const USERS_DEFAULT_OPTIONS = {
   offset: 0,
 };
 
+export const UPDATE_USER_MUTATION = gql`
+  mutation UpdateUser($input: UpdateUserInput!) {
+    updateUser(input: $input) {
+      success
+      message
+      user {
+        id
+        email
+        first_name
+        last_name
+        status
+        roles {
+          id
+          name
+        }
+        created_at
+      }
+    }
+  }
+`;
+
+export const DEACTIVATE_USER_MUTATION = gql`
+  mutation DeactivateUser($id: ID!) {
+    deactivateUser(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
 export type UsersQueryResult = {
   getUsers: {
     data: Array<{
@@ -47,4 +77,19 @@ export type UsersQueryResult = {
       filtered_rows?: number | null;
     } | null;
   };
+};
+
+export type UpdateUserResult = {
+  updateUser: {
+    success: boolean;
+    message?: string | null;
+    user?: UsersQueryResult["getUsers"]["data"][number] | null;
+  } | null;
+};
+
+export type DeactivateUserResult = {
+  deactivateUser: {
+    success: boolean;
+    message?: string | null;
+  } | null;
 };

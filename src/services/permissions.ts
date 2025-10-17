@@ -18,7 +18,7 @@ export const GET_PERMISSIONS_QUERY = gql`
 `;
 
 export const ASSIGN_PERMISSION_MUTATION = gql`
-  mutation AssignPermission($input: CreateRolePermissionInput!) {
+  mutation AssignPermission($input: RolePermissionInput!) {
     assignPermission(input: $input) {
       id
     }
@@ -26,7 +26,7 @@ export const ASSIGN_PERMISSION_MUTATION = gql`
 `;
 
 export const REVOKE_PERMISSION_MUTATION = gql`
-  mutation RevokePermission($input: RemoveRolePermissionInput!) {
+  mutation RevokePermission($input: RolePermissionInput!) {
     revokePermission(input: $input) {
       id
     }

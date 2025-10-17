@@ -1,11 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Menu, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { ChevronDown, Menu, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { NAV_ITEMS } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ const LOGOUT_MUTATION = gql`
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -33,6 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tokens = useAuthStore((state) => state.tokens);
   const clearAuth = useAuthStore((state) => state.clear);
   const setSession = useAuthStore((state) => state.setSession);
+  const user = session?.user;
 
   const [logoutMutation, { loading: loggingOut }] = useMutation(
     LOGOUT_MUTATION,
@@ -40,6 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       fetchPolicy: "no-cache",
     }
   );
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useQuery(CURRENT_USER_QUERY, {
     skip: !tokens?.accessToken,
@@ -59,8 +62,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   const userDisplay = useMemo(() => {
-    const user = session?.user;
-
     if (!user) {
       return {
         name: "Guest",
@@ -87,7 +88,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         : "User",
       initials: initials || fallbackName.slice(0, 2).toUpperCase(),
     };
-  }, [session]);
+  }, [user]);
+
+  const userStatusLabel = user?.status
+    ? user.status.charAt(0).toUpperCase() + user.status.slice(1)
+    : "Unknown status";
 
   const handleLogout = async () => {
     try {
@@ -121,6 +126,39 @@ export function AppShell({ children }: { children: ReactNode }) {
       unsub?.();
     };
   }, [router]);
+
+  useEffect(() => {
+    if (!profileOpen) {
+      return;
+    }
+
+    const handlePointer = (event: MouseEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setProfileOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointer);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [profileOpen]);
+
+  useEffect(() => {
+    setProfileOpen(false);
+  }, [pathname]);
 
   return (
     <div className="flex min-h-screen gap-6 bg-transparent px-4 py-6 sm:px-8">
@@ -160,27 +198,92 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-1.5">
-                <div>
-                  <p className="text-xs font-semibold text-slate-900">
-                    {userDisplay.name}
-                  </p>
-                  <p className="text-[11px] text-slate-500">
-                    {userDisplay.role}
-                  </p>
-                </div>
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                  {userDisplay.initials}
-                </span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                disabled={loggingOut}
+              <div
+                className="relative"
+                ref={profileMenuRef}
               >
-                {loggingOut ? "Signing out..." : "Sign out"}
-              </Button>
+                <button
+                  type="button"
+                  className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-1.5 transition-colors hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+                  onClick={() => setProfileOpen((prev) => !prev)}
+                  aria-haspopup="menu"
+                  aria-expanded={profileOpen}
+                  aria-label="Open profile menu"
+                >
+                  <div className="flex flex-col items-start leading-tight">
+                    <span className="text-xs font-semibold text-slate-900">
+                      {userDisplay.name}
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      {userDisplay.role}
+                    </span>
+                  </div>
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                    {userDisplay.initials}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-slate-400 transition-transform",
+                      profileOpen ? "rotate-180" : "rotate-0"
+                    )}
+                    aria-hidden="true"
+                  />
+                </button>
+                {profileOpen ? (
+                  <div className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-white/40 bg-white/95 p-4 text-left shadow-xl backdrop-blur">
+                    <div className="flex items-start gap-3">
+                      <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                        {userDisplay.initials}
+                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-slate-900">
+                          {userDisplay.name}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {session?.user?.email ?? "No email on record"}
+                        </span>
+                        <span className="mt-1 inline-flex w-fit rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600">
+                          {userDisplay.role}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-xs text-slate-500">
+                      {user ? (
+                        <>
+                          <p>
+                            Status:{" "}
+                            <span className="font-medium text-slate-700">
+                              {userStatusLabel}
+                            </span>
+                          </p>
+                          <p>
+                            Permissions:{" "}
+                            <span className="font-medium text-slate-700">
+                              {user.permissions.length}
+                            </span>
+                          </p>
+                        </>
+                      ) : (
+                        <p>You are not currently signed in.</p>
+                      )}
+                    </div>
+
+                    <Button
+                      className="mt-4 w-full"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        void handleLogout();
+                      }}
+                      disabled={loggingOut}
+                    >
+                      {loggingOut ? "Signing out..." : "Sign out"}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </header>

@@ -30,7 +30,7 @@ export const GET_ROLES_QUERY = gql`
 `;
 
 export const ASSIGN_ROLE_MUTATION = gql`
-  mutation AssignRole($input: CreateRoleUserInput!) {
+  mutation AssignRole($input: RoleUserInput!) {
     assignRole(input: $input) {
       id
     }
@@ -38,7 +38,7 @@ export const ASSIGN_ROLE_MUTATION = gql`
 `;
 
 export const REVOKE_ROLE_MUTATION = gql`
-  mutation RevokeRole($input: CreateRoleUserInput!) {
+  mutation RevokeRole($input: RoleUserInput!) {
     revokeRole(input: $input) {
       id
     }
