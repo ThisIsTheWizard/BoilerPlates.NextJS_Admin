@@ -1,81 +1,51 @@
 # BoilerPlates.NextJS_Admin
 
-![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)
-![NestJS](https://img.shields.io/badge/NestJS-10-red?logo=nestjs)
-![GraphQL](https://img.shields.io/badge/GraphQL-16-e10098?logo=graphql)
-![Prisma](https://img.shields.io/badge/Prisma-5-blue?logo=prisma)
-![Postgres](https://img.shields.io/badge/Postgres-17-blue?logo=postgresql)
-![Apollo](https://img.shields.io/badge/Apollo-3-311c87?logo=apollo-graphql)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=nextdotjs)
+![React](https://img.shields.io/badge/React-19-61dafb?logo=react)
+![GraphQL](https://img.shields.io/badge/GraphQL-Apollo_Client_3-e10098?logo=graphql)
+![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)
+![Zustand](https://img.shields.io/badge/State_Zustand-4-1f2937)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-A boilerplate setup for running a **NestJS** backend with **GraphQL**, **PostgreSQL** and **Prisma ORM** using Docker Compose.
-This repository provides a ready-to-use **NestJS + GraphQL API** connected to PostgreSQL for rapid backend development.
+Modern admin dashboard boilerplate built with **Next.js 15 (App Router)**, **Apollo Client**, and **Tailwind CSS**. It consumes the GraphQL API exposed by the companion [BoilerPlates.Express_GraphQL](../BoilerPlates.Express_GraphQL) backend and ships with ready-to-use pages for users, roles, and permissions management.
 
 ---
 
 ## 🚀 Features
 
-- **Pure GraphQL API** with Apollo Server (no REST endpoints)
-- PostgreSQL database running in Docker
-- Prisma ORM for type-safe database access
-- GraphQL Playground for API exploration
-- Complete authentication & authorization system
-- Role-based access control with GraphQL guards
-- Permission-based access control
-- JWT token management with refresh tokens
-- pgAdmin 4 for database management
-- Environment-based configuration
-- Fully Dockerized for easy setup and deployment
-- Comprehensive test suite
+- **App Router + Turbopack** development experience with fast refresh
+- **Apollo Client 3** GraphQL integration with typed services and reusable hooks
+- **Authentication-aware layout guards** and blocking loaders to prevent flash of unauthenticated UI
+- **Role & permission dashboards** with modals for inline assignment/revocation
+- **Responsive UI** powered by Tailwind CSS, Radix-inspired components, and lucide-react icons
+- **Zustand store** for lightweight auth/session state management
+- **Shared UI utilities** (blocking loader, charts, cards) ready to extend for custom modules
+- **Production-ready build** (`pnpm exec next build`) without external font downloads
 
 ---
 
 ## 📂 Project Structure
 
 ```
-BoilerPlates.Nest_GraphQL/
-├───prisma/
-│   ├── schema.prisma        # Database schema with models
-│   └── seed.ts              # Database seeding script
-└───src/
-   ├───main.ts               # NestJS entry point
-   ├───app/                  # Application core
-   │   ├── app.module.ts     # Root module with GraphQL setup
-   │   ├── app.controller.ts # Basic health check endpoint
-   │   └── app.service.ts    # Root service
-   ├───auth/                 # Authentication module
-   │   ├── auth.resolver.ts  # GraphQL resolver for auth
-   │   ├── auth.service.ts   # Authentication business logic
-   │   ├── auth.module.ts    # Auth module configuration
-   │   └── auth.inputs.ts    # GraphQL input types
-   ├───user/                 # User management
-   │   ├── user.resolver.ts  # GraphQL resolver for users
-   │   ├── user.service.ts   # User business logic
-   │   ├── user.module.ts    # User module configuration
-   │   ├── user.types.ts     # GraphQL object types
-   │   └── user.inputs.ts    # GraphQL input types
-   ├───role/                 # Role management
-   │   ├── role.resolver.ts  # GraphQL resolver for roles
-   │   ├── role.service.ts   # Role business logic
-   │   ├── role.module.ts    # Role module configuration
-   │   ├── role.types.ts     # GraphQL object types
-   │   └── role.inputs.ts    # GraphQL input types
-   ├───permission/           # Permission management
-   │   ├── permission.resolver.ts # GraphQL resolver for permissions
-   │   ├── permission.service.ts  # Permission business logic
-   │   ├── permission.module.ts   # Permission module configuration
-   │   ├── permission.types.ts    # GraphQL object types
-   │   └── permission.inputs.ts   # GraphQL input types
-   ├───guards/               # GraphQL-specific guards
-   │   ├── graphql-auth.guard.ts       # Authentication guard
-   │   ├── graphql-roles.guard.ts      # Role-based access guard
-   │   └── graphql-permissions.guard.ts # Permission-based access guard
-   ├───decorators/           # Custom decorators
-   │   ├── graphql-user.decorator.ts   # Extract user from GraphQL context
-   │   ├── roles.decorator.ts          # Role metadata decorator
-   │   └── permissions.decorator.ts    # Permission metadata decorator
-   └───prisma/
-       └── prisma.service.ts # Prisma database service
+BoilerPlates.NextJS_Admin/
+├── src/
+│   ├── app/                    # Next.js app router
+│   │   ├── (auth)/             # Auth pages (login, register, forgot password)
+│   │   ├── (dashboard)/        # Protected dashboard routes (users, roles, permissions)
+│   │   ├── layout.tsx          # Root layout with providers
+│   │   └── globals.css         # Tailwind + theme tokens
+│   ├── components/
+│   │   ├── dashboard/          # Charts & dashboard widgets
+│   │   ├── shared/             # Sidebar navigation and shared atoms
+│   │   └── ui/                 # Button, card, blocking loader, etc.
+│   ├── hooks/                  # Custom React hooks (e.g. pagination helpers)
+│   ├── lib/                    # Utilities (formatting, navigation helpers)
+│   ├── services/               # Apollo queries/mutations for users, roles, permissions
+│   ├── store/                  # Zustand auth session store
+│   └── types/                  # Shared TypeScript types
+├── public/                     # Static assets
+├── .env.example                # Environment variable template
+└── package.json
 ```
 
 ---
@@ -85,162 +55,90 @@ BoilerPlates.Nest_GraphQL/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/ThisIsTheWizard/BoilerPlates.Nest_GraphQL.git
-cd BoilerPlates.Nest_GraphQL
+git clone https://github.com/ThisIsTheWizard/BoilerPlates.NextJS_Admin.git
+cd BoilerPlates.NextJS_Admin
 ```
 
 ### 2. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 3. Configure environment variables
 
-Copy `.env.sample` to `.env` and update your configuration:
+Copy `.env.example` to `.env` and adjust the values to point at your running backend (defaults to `http://localhost:8000`).
 
 ```bash
-cp .env.sample .env
+cp .env.example .env
 ```
 
-Example `.env` entries:
+Example:
 
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/mydb
-PORT=8000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXTAUTH_SECRET=replace-with-a-32-char-random-value
 ```
 
-### 4. Start services with Docker
+### 4. Run the development server
 
 ```bash
-docker-compose up -d --build
+pnpm dev
 ```
+
+Visit [http://localhost:3000](http://localhost:3000) to access the dashboard UI. Make sure the Express GraphQL backend is running so data can be fetched successfully.
 
 ---
 
-## 🌐 Access
+## 🌐 Available Pages
 
-- **GraphQL Playground** → [http://localhost:8000/graphql](http://localhost:8000/graphql)
-- **Health Check** → [http://localhost:8000](http://localhost:8000)
-- **PostgreSQL** → [http://localhost:5432](http://localhost:5432)
-- **pgAdmin** → [http://localhost:4000](http://localhost:4000)
-  Use credentials from `.env`
+| Route                                     | Description                                                       |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| `/login`, `/register`, `/forgot-password` | Public auth flows that interact with the GraphQL backend          |
+| `/dashboard`                              | Overview metrics (user counts, signup trend, status distribution) |
+| `/users`                                  | User directory with role assignment and status management modals  |
+| `/roles`                                  | Role overview with permission assignment modals                   |
+| `/permissions`                            | Permission inventory with role assignment management              |
 
-## 📋 Available GraphQL Operations
-
-### Authentication
-
-- `register` - Register a new user
-- `verifyUserEmail` - Verify user email with token
-- `resendVerificationEmail` - Resend email verification
-- `login` - Login with email/password
-- `refreshToken` - Refresh JWT token
-- `logout` - Logout user
-- `changeEmail` - Change user email
-- `cancelChangeEmail` - Cancel email change request
-- `verifyChangeEmail` - Verify email change with token
-- `setUserEmail` - Set user email (admin only)
-- `changePassword` - Change user password
-- `setUserPassword` - Set user password (admin only)
-- `forgotPassword` - Request password reset
-- `retryForgotPassword` - Retry password reset request
-- `verifyForgotPassword` - Verify and reset password
-- `verifyForgotPasswordCode` - Verify password reset code
-- `verifyUserPassword` - Verify user password
-- `me` - Get current user info
-- `assignRole` - Assign role to user (admin only)
-- `revokeRole` - Revoke role from user (admin only)
-
-### User Management
-
-- `users` - Get all users (admin/developer only)
-- `user(id)` - Get user by ID (admin/developer only)
-- `createUser` - Create new user (admin/developer only)
-- `updateUser` - Update user (admin/developer only)
-- `deleteUser` - Delete user (admin/developer only)
-
-### Role Management
-
-- `roles` - Get all roles (admin/developer only)
-- `role(id)` - Get role by ID (admin/developer only)
-- `createRole` - Create new role (admin/developer only)
-- `updateRole` - Update role (admin/developer only)
-- `deleteRole` - Delete role (admin/developer only)
-- `assignPermission` - Assign permission to role (admin/developer only)
-- `revokePermission` - Revoke permission from role (admin/developer only)
-- `seedRoles` - Seed system roles (admin/developer only)
-
-### Permission Management
-
-- `permissions` - Get all permissions (admin/developer only)
-- `permission(id)` - Get permission by ID (admin/developer only)
-- `createPermission` - Create new permission (admin/developer only)
-- `updatePermission` - Update permission (admin/developer only)
-- `deletePermission` - Delete permission (admin/developer only)
-- `seedPermissions` - Seed system permissions (admin/developer only)
+All dashboard routes are gated by the auth layout. If session tokens are missing or invalid, the UI shows a blocking loader while redirecting to `/login`.
 
 ---
 
-## 🛠️ Commands
+## 🔌 GraphQL Integration
 
-- Start containers:
+The admin UI communicates with the Express GraphQL server through service modules in `src/services/`. Key operations:
 
-```bash
-docker-compose up -d --build
-```
+- `GET_USERS_QUERY`, `GET_ROLES_QUERY`, `GET_PERMISSIONS_QUERY`
+- `ASSIGN_PERMISSION_MUTATION` / `REVOKE_PERMISSION_MUTATION`
+- `ASSIGN_ROLE_MUTATION` / `REVOKE_ROLE_MUTATION`
+- `LOGIN_MUTATION`, `REGISTER_MUTATION`, `REQUEST_PASSWORD_RESET_MUTATION`
 
-- Stop containers:
-
-```bash
-docker-compose down
-```
-
-- View logs:
-
-```bash
-docker-compose logs -f
-```
-
-- Run NestJS server locally (without Docker):
-
-```bash
-npm run nest:dev
-```
-
-- Run Prisma migrations:
-
-```bash
-npx prisma migrate dev
-```
-
-- Generate Prisma client:
-
-```bash
-npx prisma generate
-```
-
-- Seed the database:
-
-```bash
-ts-node prisma/seed.ts
-```
+Each page composes these operations with Apollo hooks while keeping UI feedback (spinners, optimistic updates, toasts) encapsulated within modals and components.
 
 ---
 
-## 📦 Volumes
+## 📦 Scripts
 
-Data is persisted via Docker volumes:
+| Command                | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `pnpm dev`             | Start the development server with React fast refresh |
+| `pnpm lint`            | Run ESLint across the project                        |
+| `pnpm exec next build` | Generate a production build (network-free fonts)     |
+| `pnpm start`           | Launch the compiled app in production mode           |
 
-- `node_server_data` → Stores Node server files for hot reload in dev mode
-- `postgres_admin_data` → Stores pgAdmin configuration
-- `postgres_data` → Stores PostgreSQL database files
+---
+
+## 🤝 Working with the Backend
+
+This frontend pairs with **BoilerPlates.Express_GraphQL**. Ensure that project is running (Docker or local) so GraphQL queries hit a live endpoint. Adjust `NEXT_PUBLIC_API_BASE_URL` if the backend runs on a different host/port.
 
 ---
 
 ## 📝 License
 
-This boilerplate is provided under the MIT License.
-Feel free to use and modify it for your projects.
+MIT © [The Wizard](https://github.com/ThisIsTheWizard)
+
+Feel free to fork, adapt, and extend the dashboard for your own role/permission management workflows.
 
 ---
 
