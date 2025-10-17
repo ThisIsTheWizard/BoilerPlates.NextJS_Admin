@@ -5,7 +5,7 @@ export type AuthUser = {
   email: string;
   first_name?: string | null;
   last_name?: string | null;
-  permissions: String[];
+  permissions: string[];
   role: RoleName;
   status: "active" | "inactive" | "invited" | "unverified";
 };

@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
           Reset your password
         </h1>
         <p className="text-sm text-slate-600">
-          Enter the email address associated with your account and we'll send reset instructions.
+          Enter the email address associated with your account and we&apos;ll send reset instructions.
         </p>
       </div>
       <form className="space-y-5" onSubmit={handleSubmit}>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client";
-import { Filter, Loader2, Search, Shield } from "lucide-react";
+import { Filter, Loader2, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,7 +39,16 @@ export default function PermissionsPage() {
     error: permissionsError,
     refetch: refetchPermissions,
   } = useQuery<PermissionsQueryResult>(GET_PERMISSIONS_QUERY, {
-    variables: { options: { limit: 200, offset: 0 } },
+    variables: {
+      options: {
+        limit: 200,
+        offset: 0,
+        order: [
+          ["module", "ASC"],
+          ["action", "ASC"],
+        ],
+      },
+    },
     fetchPolicy: "cache-and-network",
   });
 
@@ -53,8 +62,10 @@ export default function PermissionsPage() {
     fetchPolicy: "cache-and-network",
   });
 
-  const permissions = permissionsData?.getPermissions?.data ?? [];
-  const roles = rolesData?.getRoles?.data ?? [];
+  const rawPermissions = permissionsData?.getPermissions?.data;
+  const permissions = useMemo(() => rawPermissions ?? [], [rawPermissions]);
+  const rawRoles = rolesData?.getRoles?.data;
+  const roles = useMemo(() => rawRoles ?? [], [rawRoles]);
   const activePermission = useMemo(
     () =>
       permissions.find((permission) => permission.id === activePermissionId) ??
@@ -70,7 +81,12 @@ export default function PermissionsPage() {
         set.add(permission.module);
       }
     });
-    return Array.from(set).sort();
+    return Array.from(set)
+      .map((module) => ({
+        raw: module,
+        label: formatModuleLabel(module),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [permissions]);
 
   const permissionRoleMap = useMemo(() => {
@@ -154,9 +170,9 @@ export default function PermissionsPage() {
                 disabled={permissionsLoading}
               >
                 <option value="all">All modules</option>
-                {modules.map((module) => (
-                  <option key={module} value={module}>
-                    {module}
+                {modules.map(({ raw, label }) => (
+                  <option key={raw} value={raw}>
+                    {label}
                   </option>
                 ))}
               </select>
@@ -194,10 +210,9 @@ export default function PermissionsPage() {
             <table className="min-w-full divide-y divide-white/40 text-sm">
               <thead className="bg-white/40 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 backdrop-blur">
                 <tr>
-                  <th className="px-4 py-3">Permission</th>
                   <th className="px-4 py-3">Module</th>
                   <th className="px-4 py-3">Action</th>
-                  <th className="px-4 py-3">Roles using</th>
+                  <th className="px-4 py-3">Assigned roles</th>
                   <th className="px-4 py-3 text-right">Created</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -209,10 +224,7 @@ export default function PermissionsPage() {
                   return (
                     <tr key={permission.id} className="hover:bg-white/90">
                       <td className="px-4 py-4 font-medium text-slate-900">
-                        {permission.module}.{permission.action}
-                      </td>
-                      <td className="px-4 py-4 capitalize text-slate-600">
-                        {permission.module}
+                        {formatModuleLabel(permission.module)}
                       </td>
                       <td className="px-4 py-4 capitalize text-slate-600">
                         {permission.action}
@@ -233,8 +245,9 @@ export default function PermissionsPage() {
                       </td>
                       <td className="px-4 py-4 text-right">
                         <Button
-                          variant="outline"
+                          variant="default"
                           size="sm"
+                          className="px-4 sm:px-5"
                           onClick={() => setActivePermissionId(permission.id)}
                           disabled={rolesLoading || permissionsLoading}
                         >
@@ -257,7 +270,6 @@ export default function PermissionsPage() {
           assignedRoles={permissionRoleMap.get(activePermission.id) ?? []}
           allRoles={roles}
           onClose={closeModal}
-          setBanner={setBanner}
           refetchRoles={refetchRoles}
           refetchPermissions={refetchPermissions}
         />
@@ -287,7 +299,6 @@ type PermissionRolesModalProps = {
   assignedRoles: RoleRow[];
   allRoles: RoleRow[];
   onClose: () => void;
-  setBanner: (banner: BannerState) => void;
   refetchRoles: () => Promise<unknown>;
   refetchPermissions: () => Promise<unknown>;
 };
@@ -298,56 +309,148 @@ function PermissionRolesModal({
   assignedRoles,
   allRoles,
   onClose,
-  setBanner,
   refetchRoles,
   refetchPermissions,
 }: PermissionRolesModalProps) {
-  const [search, setSearch] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingRoleId, setPendingRoleId] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  
   const [assignPermissionToRole, { loading: assigning }] = useMutation(
     ASSIGN_PERMISSION_MUTATION
   );
   const [revokePermissionFromRole, { loading: revoking }] = useMutation(
     REVOKE_PERMISSION_MUTATION
   );
-  const [mounted, setMounted] = useState(false);
-  const titleId = useId();
-  const descriptionId = useId();
-  const busyState = assigning || revoking;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const assignedRoleIds = useMemo(
+    () => (assignedRoles ?? []).map((role) => role.id),
+    [assignedRoles]
+  );
+
+  const assignedKey = useMemo(
+    () => assignedRoleIds.slice().sort().join("|"),
+    [assignedRoleIds]
+  );
+
   useEffect(() => {
-    setSearch("");
-  }, [permission.id]);
+    if (!open) return;
+    setSelectedRoleIds(new Set(assignedRoleIds));
+    setErrorMessage(null);
+    setPendingRoleId(null);
+    setHasChanges(false);
+  }, [open, assignedKey, assignedRoleIds]);
+
+  const filteredRoles = allRoles;
+  const busyState = assigning || revoking || pendingRoleId !== null;
+
+  const handleClose = useCallback(async () => {
+    if (assigning || revoking || pendingRoleId !== null) {
+      return;
+    }
+
+    try {
+      if (hasChanges) {
+        await Promise.all([refetchRoles(), refetchPermissions()]);
+      }
+    } catch (error) {
+      console.error("[closePermissionRolesModal]", error);
+    } finally {
+            onClose();
+    }
+  }, [
+    assigning,
+    revoking,
+    pendingRoleId,
+    hasChanges,
+    refetchRoles,
+    refetchPermissions,
+    onClose,
+  ]);
+
+  const handleToggleRole = async (roleId: string) => {
+    const nextChecked = !selectedRoleIds.has(roleId);
+    setErrorMessage(null);
+
+    setSelectedRoleIds((prev) => {
+      const next = new Set(prev);
+      if (nextChecked) {
+        next.add(roleId);
+      } else {
+        next.delete(roleId);
+      }
+      return next;
+    });
+
+    setPendingRoleId(roleId);
+
+    try {
+      if (nextChecked) {
+        await assignPermissionToRole({
+          variables: {
+            input: {
+              permission_id: permission.id,
+              role_id: roleId,
+            },
+          },
+        });
+      } else {
+        await revokePermissionFromRole({
+          variables: {
+            input: {
+              role_id: roleId,
+              permission_id: permission.id,
+            },
+          },
+        });
+      }
+
+      setHasChanges(true);
+    } catch (error) {
+      console.error("[togglePermissionRole]", error);
+      setSelectedRoleIds((prev) => {
+        const next = new Set(prev);
+        if (nextChecked) {
+          next.delete(roleId);
+        } else {
+          next.add(roleId);
+        }
+        return next;
+      });
+      const message =
+        error instanceof Error
+          ? error.message.replace("GraphQL error: ", "")
+          : "Unable to update roles for this permission.";
+      setErrorMessage(message);
+    } finally {
+      setPendingRoleId(null);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
 
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busyState) {
-        onClose();
+      if (event.key === "Escape") {
+        void handleClose();
       }
     };
 
     if (typeof document === "undefined") return;
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose, busyState]);
-
-  const assignedRoleIds = useMemo(
-    () => new Set(assignedRoles.map((role) => role.id)),
-    [assignedRoles]
-  );
-
-  const filteredRoles = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return allRoles;
-    return allRoles.filter((role) =>
-      role.name.toLowerCase().includes(query)
-    );
-  }, [allRoles, search]);
+  }, [open, handleClose]);
 
   const portalTarget = typeof document !== "undefined" ? document.body : null;
 
@@ -355,12 +458,14 @@ function PermissionRolesModal({
     return null;
   }
 
+  const moduleLabel = formatModuleLabel(permission.module);
+  const actionLabel = formatActionLabel(permission.action);
+
   return createPortal(
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 px-4 py-6 backdrop-blur-sm"
       onMouseDown={() => {
-        if (busyState) return;
-        onClose();
+        void handleClose();
       }}
     >
       <div
@@ -373,8 +478,14 @@ function PermissionRolesModal({
       >
         <div className="flex flex-col gap-6">
           <div className="space-y-1">
-            <h2 id={titleId} className="text-lg font-semibold text-slate-900">
-              Manage roles for {permission.module}.{permission.action}
+            <h2
+              id={titleId}
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-semibold text-slate-900"
+            >
+              <span>Manage roles for</span>
+              <span className="inline-flex items-center rounded-full bg-slate-900/5 px-3 py-1 text-sm font-semibold text-slate-900">
+                {moduleLabel} · {actionLabel}
+              </span>
             </h2>
             <p id={descriptionId} className="text-sm text-slate-600">
               Assign or revoke roles that can use this permission.
@@ -382,91 +493,57 @@ function PermissionRolesModal({
           </div>
 
           <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Roles with access
+                        {errorMessage ? (
+              <p className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {errorMessage}
               </p>
-              {assignedRoles.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-3 text-xs text-slate-500">
-                  No roles currently use this permission. Select one below to
-                  grant access.
+            ) : null}
+
+            <fieldset
+              className="max-h-80 overflow-y-auto rounded-2xl border border-white/60 bg-white/80 p-3"
+              disabled={busyState}
+            >
+              {filteredRoles.length === 0 ? (
+                <p className="px-2 py-4 text-xs text-slate-500">
+                  {allRoles.length === 0
+                    ? "No roles available."
+                    : "There are no roles to display."}
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {assignedRoles.map((role) => (
-                    <span
-                      key={role.id}
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm"
-                    >
-                      {role.name}
-                      <button
-                        type="button"
-                        className="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500 transition hover:bg-slate-900/20 hover:text-slate-900 disabled:opacity-50"
-                        onClick={() => handleRemove(role.id)}
-                        disabled={busyState}
+                <div className="grid gap-3">
+                  {filteredRoles.map((role) => {
+                    const checked = selectedRoleIds.has(role.id);
+                    const isPending = pendingRoleId === role.id;
+                    return (
+                      <label
+                        key={role.id}
+                        className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300"
                       >
-                        Remove
-                      </button>
-                    </span>
-                  ))}
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border border-slate-300 text-slate-900 focus:ring-slate-900/20"
+                          checked={checked}
+                          onChange={() => {
+                            if (!isPending) {
+                              void handleToggleRole(role.id);
+                            }
+                          }}
+                          disabled={isPending}
+                        />
+                        <span className="capitalize">{role.name}</span>
+                        {isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                        ) : null}
+                      </label>
+                    );
+                  })}
                 </div>
               )}
-            </div>
-
-            <div className="space-y-3">
-              <label
-                htmlFor={`${titleId}-search`}
-                className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-              >
-                Add role
-              </label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                <input
-                  id={`${titleId}-search`}
-                  type="search"
-                  placeholder="Search roles..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  className="w-full rounded-xl border border-white/60 bg-white/90 py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm focus:border-slate-900/50 focus:outline-none focus:ring-2 focus:ring-slate-900/20 disabled:opacity-60"
-                  disabled={busyState}
-                />
-              </div>
-              <div className="max-h-56 overflow-y-auto rounded-2xl border border-white/60 bg-white/80 p-2">
-                {filteredRoles.length === 0 ? (
-                  <p className="px-2 py-4 text-xs text-slate-500">
-                    {availableRoles.length === 0
-                      ? "All roles already have this permission."
-                      : "No roles match your search."}
-                  </p>
-                ) : (
-                  <ul className="space-y-1">
-                    {filteredRoles.map((role) => (
-                      <li key={role.id}>
-                        <button
-                          type="button"
-                          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100/80 disabled:opacity-50"
-                          onClick={() => handleAssign(role.id)}
-                          disabled={busyState}
-                        >
-                          <span>{role.name}</span>
-                          <span className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-slate-400">
-                            {busyState ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : null}
-                            Grant
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+            </fieldset>
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" onClick={onClose} disabled={busyState}>
+            <Button variant="ghost" onClick={() => void handleClose()} disabled={busyState}>
               Close
             </Button>
           </div>
@@ -475,64 +552,22 @@ function PermissionRolesModal({
     </div>,
     portalTarget
   );
+}
 
-  async function handleAssign(roleId: string) {
-    const role = allRoles.find((item) => item.id === roleId);
-    try {
-      await assignPermissionToRole({
-        variables: {
-          input: {
-            permission_id: permission.id,
-            role_id: roleId,
-          },
-        },
-      });
-      await Promise.all([refetchRoles(), refetchPermissions()]);
-      setBanner({
-        type: "success",
-        message: `Granted ${permission.module}.${permission.action} to ${
-          role?.name ?? "role"
-        }.`,
-      });
-    } catch (error) {
-      console.error("[assignPermission]", error);
-      setBanner({
-        type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to assign the selected role.",
-      });
-    }
-  }
+function formatModuleLabel(module?: string | null) {
+  const value = module ?? "global";
+  return value
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
-  async function handleRemove(roleId: string) {
-    const role = allRoles.find((item) => item.id === roleId);
-    try {
-      await revokePermissionFromRole({
-        variables: {
-          input: {
-            role_id: roleId,
-            permission_id: permission.id,
-          },
-        },
-      });
-      await Promise.all([refetchRoles(), refetchPermissions()]);
-      setBanner({
-        type: "success",
-        message: `Revoked ${permission.module}.${permission.action} from ${
-          role?.name ?? "role"
-        }.`,
-      });
-    } catch (error) {
-      console.error("[revokePermission]", error);
-      setBanner({
-        type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to revoke the selected role.",
-      });
-    }
-  }
+function formatActionLabel(action?: string | null) {
+  const value = action ?? "read";
+  return value
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

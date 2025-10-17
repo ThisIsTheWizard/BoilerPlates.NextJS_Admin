@@ -33,13 +33,13 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [registerMutation, { loading }] = useMutation<
-    { createUser: GraphQLUser },
+    { register: GraphQLUser },
     {
       input: {
         email: string;
         password: string;
-        first_name?: string;
-        last_name?: string;
+        first_name: string;
+        last_name: string;
       };
     }
   >(REGISTER_MUTATION);
@@ -56,16 +56,20 @@ export default function RegisterPage() {
     setSuccessMessage(null);
 
     try {
-      await registerMutation({
+      const { data } = await registerMutation({
         variables: {
           input: {
             email: formState.email,
             password: formState.password,
-            first_name: formState.firstName || undefined,
-            last_name: formState.lastName || undefined,
+            first_name: formState.firstName,
+            last_name: formState.lastName,
           },
         },
       });
+
+      if (!data?.register) {
+        throw new Error("Account creation failed. Please try again.");
+      }
 
       setSuccessMessage(
         "Account created successfully. You can now sign in with your credentials."

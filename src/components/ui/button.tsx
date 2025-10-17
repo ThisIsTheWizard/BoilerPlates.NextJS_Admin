@@ -5,7 +5,7 @@ import type { ButtonHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "default" | "ghost" | "outline" | "subtle";
+type ButtonVariant = "default" | "ghost" | "outline" | "subtle" | "danger";
 type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 export type ButtonProps = {
@@ -22,6 +22,8 @@ const VARIANT_STYLES: Record<ButtonVariant, string> = {
     "border border-white/60 bg-white/60 text-slate-800 hover:bg-white/80 focus-visible:ring-slate-300",
   subtle:
     "bg-white/60 text-slate-800 hover:bg-white/70 focus-visible:ring-slate-300",
+  danger:
+    "bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-300",
 };
 
 const SIZE_STYLES: Record<ButtonSize, string> = {

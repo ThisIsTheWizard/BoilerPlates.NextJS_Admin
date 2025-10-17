@@ -1,9 +1,7 @@
-/* eslint-disable react-compiler/react-compiler */
 "use client";
 
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client";
-import type { Metadata } from "next";
 
 import { MiniAreaChart } from "@/components/dashboard/mini-area-chart";
 import { StatusDistribution } from "@/components/dashboard/status-distribution";
@@ -18,7 +16,7 @@ import {
   USERS_DEFAULT_OPTIONS,
   type UsersQueryResult,
 } from "@/services/users";
-import { formatDate } from "~/lib/utils";
+import { formatDate, toEpochMilliseconds } from "~/lib/utils";
 
 const DASHBOARD_USERS_OPTIONS = {
   ...USERS_DEFAULT_OPTIONS,
@@ -50,11 +48,21 @@ export default function DashboardHomePage() {
     loading: permissionsLoading,
     error: permissionsError,
   } = useQuery<PermissionsQueryResult>(GET_PERMISSIONS_QUERY, {
-    variables: { options: { limit: 100, offset: 0 } },
+    variables: {
+      options: {
+        limit: 200,
+        offset: 0,
+        order: [
+          ["module", "ASC"],
+          ["action", "ASC"],
+        ],
+      },
+    },
     fetchPolicy: "cache-and-network",
   });
 
-  const userRows = usersData?.getUsers?.data ?? [];
+  const rawUserRows = usersData?.getUsers?.data;
+  const userRows = useMemo(() => rawUserRows ?? [], [rawUserRows]);
   const totalUsers =
     usersData?.getUsers?.meta_data?.total_rows ?? userRows.length;
   const activeUsers = userRows.filter(
@@ -67,10 +75,12 @@ export default function DashboardHomePage() {
     (user) => user.status === "unverified"
   ).length;
 
-  const roles = rolesData?.getRoles?.data ?? [];
+  const rawRoles = rolesData?.getRoles?.data;
+  const roles = useMemo(() => rawRoles ?? [], [rawRoles]);
   const rolesCount = rolesData?.getRoles?.meta_data?.total_rows ?? roles.length;
 
-  const globalPermissions = permissionsData?.getPermissions?.data ?? [];
+  const rawPermissions = permissionsData?.getPermissions?.data;
+  const globalPermissions = useMemo(() => rawPermissions ?? [], [rawPermissions]);
   const permissionsCount =
     permissionsData?.getPermissions?.meta_data?.total_rows ??
     globalPermissions.length;
@@ -291,11 +301,15 @@ type UserRow = UsersQueryResult["getUsers"]["data"][number];
 function buildMonthlyTrend(users: UserRow[], months = 6) {
   const now = new Date();
   const markers: Array<{ key: string; label: string }> = [];
+  const monthFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
 
   for (let index = months - 1; index >= 0; index -= 1) {
     const marker = new Date(now.getFullYear(), now.getMonth() - index, 1);
     const key = `${marker.getFullYear()}-${marker.getMonth()}`;
-    const label = marker.toLocaleString(undefined, { month: "short" });
+    const label = monthFormatter.format(marker);
     markers.push({ key, label });
   }
 
@@ -305,8 +319,9 @@ function buildMonthlyTrend(users: UserRow[], months = 6) {
   }, {});
 
   users.forEach((user) => {
-    if (!user.created_at) return;
-    const timestamp = new Date(user.created_at);
+    const epoch = toEpochMilliseconds(user.created_at);
+    if (epoch === null) return;
+    const timestamp = new Date(epoch);
     if (Number.isNaN(timestamp.getTime())) return;
     const key = `${timestamp.getFullYear()}-${timestamp.getMonth()}`;
     if (key in counts) {
@@ -328,5 +343,7 @@ function formatName(user: UserRow) {
 function formatNumber(value: number | string | null | undefined) {
   if (value === null || value === undefined) return "0";
   if (typeof value === "string") return value;
-  return new Intl.NumberFormat().format(value);
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(value);
 }

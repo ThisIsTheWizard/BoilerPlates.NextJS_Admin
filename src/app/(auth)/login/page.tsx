@@ -1,18 +1,15 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 "use client";
 
-import type { ApolloClient, NormalizedCacheObject } from "@apollo/client";
-import { useApolloClient, useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CURRENT_USER_QUERY, LOGIN_MUTATION } from "@/services/auth";
+import { LOGIN_MUTATION } from "@/services/auth";
 import { useAuthStore } from "@/store/auth.store";
-import type { AuthSession, AuthUser } from "@/types/auth";
 
 type LoginFormState = {
   email: string;
@@ -28,28 +25,14 @@ const INITIAL_STATE: LoginFormState = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const client = useApolloClient();
   const [formState, setFormState] = useState<LoginFormState>(INITIAL_STATE);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const setTokens = useAuthStore((state) => state.setTokens);
   const setSession = useAuthStore((state) => state.setSession);
   const clearAuth = useAuthStore((state) => state.clear);
-  const sessionUser = useAuthStore((state) => state.session?.user);
 
   const [loginMutation, { loading }] = useMutation(LOGIN_MUTATION);
-
-  useEffect(() => {
-    if (!sessionUser) return;
-
-    const redirectTo =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("next") ??
-          "/dashboard"
-        : "/dashboard";
-
-    router.replace(redirectTo);
-  }, [router, sessionUser]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -63,18 +46,15 @@ export default function LoginPage() {
       });
 
       const tokens = data?.login;
-
       if (!tokens) {
         throw new Error("Missing tokens in response.");
       }
 
+      setSession(null);
       setTokens({
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
       });
-
-      const profile = await fetchCurrentUser(client);
-      setSession(profile);
 
       if (typeof document !== "undefined") {
         const maxAge = formState.remember ? 60 * 60 * 24 * 7 : undefined;
@@ -188,18 +168,4 @@ export default function LoginPage() {
       </p>
     </div>
   );
-}
-
-async function fetchCurrentUser(
-  client: ApolloClient<NormalizedCacheObject>
-): Promise<AuthSession> {
-  const { data } = await client.query<{ user: AuthUser | null }>({
-    query: CURRENT_USER_QUERY,
-    fetchPolicy: "network-only",
-  });
-  if (!data?.user) {
-    throw new Error("Unable to load your profile after login.");
-  }
-
-  return { user: data?.user };
 }

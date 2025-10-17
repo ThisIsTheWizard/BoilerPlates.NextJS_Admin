@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useId } from "react";
+import { memo, useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ export const MiniAreaChart = memo(function MiniAreaChart({
   className,
 }: MiniAreaChartProps) {
   const gradientId = useId();
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const safeData =
     data.length > 0
@@ -33,19 +34,31 @@ export const MiniAreaChart = memo(function MiniAreaChart({
     ...safeData.map((point) => (Number.isFinite(point.value) ? point.value : 0)),
   );
 
-  const svgPoints = safeData.map((point, index) => {
+  const pointCoords = safeData.map((point, index) => {
     const x =
       safeData.length === 1 ? 100 : (index / (safeData.length - 1)) * 100;
     const normalizedY =
       maxValue === 0 ? 100 : 100 - (Math.max(point.value, 0) / maxValue) * 80;
     const y = Math.min(95, Math.max(5, normalizedY));
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
+    return { x, y };
   });
+
+  const svgPoints = pointCoords.map(
+    ({ x, y }) => `${x.toFixed(2)},${y.toFixed(2)}`,
+  );
 
   const areaPoints = ["0,100", ...svgPoints, "100,100"].join(" ");
 
+  const hoveredPoint =
+    hoverIndex !== null ? safeData[hoverIndex] ?? null : null;
+  const hoveredCoords =
+    hoverIndex !== null ? pointCoords[hoverIndex] ?? null : null;
+
   return (
-    <div className={cn("flex h-48 w-full flex-col gap-3", className)}>
+    <div
+      className={cn("relative flex h-48 w-full flex-col gap-3 pb-3", className)}
+      onMouseLeave={() => setHoverIndex(null)}
+    >
       <svg
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
@@ -72,18 +85,40 @@ export const MiniAreaChart = memo(function MiniAreaChart({
           strokeLinecap="round"
         />
         {safeData.map((point, index) => {
-          const [x, y] = svgPoints[index].split(",").map(Number);
+          const { x, y } = pointCoords[index];
           return (
             <circle
               key={`${point.label}-${index}`}
               cx={x}
               cy={y}
-              r={1.8}
+              r={hoverIndex === index ? 2.6 : 1.8}
               fill="rgba(15,23,42,0.9)"
+              onMouseEnter={() => setHoverIndex(index)}
+              onMouseLeave={() => setHoverIndex(null)}
+              tabIndex={0}
+              onFocus={() => setHoverIndex(index)}
+              onBlur={() => setHoverIndex(null)}
             />
           );
         })}
       </svg>
+      {hoveredPoint && hoveredCoords ? (
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            className="absolute flex flex-col items-center"
+            style={{
+              left: `${hoveredCoords.x}%`,
+              top: `${hoveredCoords.y}%`,
+              transform: "translate(-50%, calc(-100% - 8px))",
+            }}
+          >
+            <div className="rounded-md bg-slate-900/90 px-2 py-1 text-[10px] font-semibold text-white shadow-lg">
+              {hoveredPoint.label}: {hoveredPoint.value}
+            </div>
+            <span className="mt-1 inline-block h-2 w-0.5 rounded-full bg-slate-900/60" />
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
         {safeData.map((point) => (
           <span key={point.label} className="flex-1 text-center">

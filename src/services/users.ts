@@ -28,30 +28,39 @@ export const USERS_DEFAULT_OPTIONS = {
   offset: 0,
 };
 
-export const UPDATE_USER_MUTATION = gql`
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
-      success
-      message
-      user {
-        id
-        email
-        first_name
-        last_name
-        status
-        roles {
-          id
-          name
-        }
-        created_at
-      }
+export const CREATE_USER_MUTATION = gql`
+  mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      email
+      first_name
+      last_name
+      status
+      created_at
     }
   }
 `;
 
-export const DEACTIVATE_USER_MUTATION = gql`
-  mutation DeactivateUser($id: ID!) {
-    deactivateUser(id: $id) {
+export const UPDATE_USER_MUTATION = gql`
+  mutation UpdateUser($input: UpdateUserInput!) {
+    updateUser(input: $input) {
+      id
+      email
+      first_name
+      last_name
+      status
+      roles {
+        id
+        name
+      }
+      created_at
+    }
+  }
+`;
+
+export const SET_USER_PASSWORD_MUTATION = gql`
+  mutation SetUserPassword($user_id: ID!, $password: String!) {
+    setUserPasswordByAdmin(user_id: $user_id, password: $password) {
       success
       message
     }
@@ -80,15 +89,22 @@ export type UsersQueryResult = {
 };
 
 export type UpdateUserResult = {
-  updateUser: {
-    success: boolean;
-    message?: string | null;
-    user?: UsersQueryResult["getUsers"]["data"][number] | null;
+  updateUser: UsersQueryResult["getUsers"]["data"][number] | null;
+};
+
+export type CreateUserResult = {
+  createUser: {
+    id: string;
+    email: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    status?: string | null;
+    created_at?: string | null;
   } | null;
 };
 
-export type DeactivateUserResult = {
-  deactivateUser: {
+export type SetUserPasswordResult = {
+  setUserPasswordByAdmin: {
     success: boolean;
     message?: string | null;
   } | null;

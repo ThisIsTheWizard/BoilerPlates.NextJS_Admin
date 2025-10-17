@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import type { AuthSession, AuthUser, RoleName } from "@/types/auth";
+import type { AuthUser, RoleName } from "@/types/auth";
 
 export const LOGIN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
@@ -12,8 +12,8 @@ export const LOGIN_MUTATION = gql`
 `;
 
 export const REGISTER_MUTATION = gql`
-  mutation Register($input: CreateUserInput!) {
-    createUser(input: $input) {
+  mutation Register($input: RegisterInput!) {
+    register(input: $input) {
       id
       email
       first_name
@@ -51,6 +51,6 @@ export type GraphQLUser = {
   email: string;
   first_name?: string | null;
   last_name?: string | null;
-  roles: Array<{ name: RoleName }>;
+  roles?: Array<{ name: RoleName }>;
   status: AuthUser["status"];
 };
