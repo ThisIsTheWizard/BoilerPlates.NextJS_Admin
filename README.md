@@ -9,7 +9,7 @@
 
 Modern admin dashboard boilerplate built with **Next.js 15 (App Router)**, **Apollo Client**, and **Tailwind CSS**. It consumes the GraphQL API exposed by the companion [BoilerPlates.Express_GraphQL](../BoilerPlates.Express_GraphQL) backend and ships with ready-to-use pages for users, roles, and permissions management.
 
-- **Live URL**: [https://next.sheikhthewizard.world](https://next.sheikhthewizard.world)
+- **Live URL**: [https://next.wizardcld.com](https://next.wizardcld.com)
 
 ---
 
@@ -144,5 +144,5 @@ Feel free to fork, adapt, and extend the dashboard for your own role/permission 
 
 ---
 
-👋 Created by [Elias Shekh](https://sheikhthewizard.world)
+👋 Created by [Elias Shekh](https://portfolio.wizardcld.com)
 If you find this useful, ⭐ the repo or reach out!
