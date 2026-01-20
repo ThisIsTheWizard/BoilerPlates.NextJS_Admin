@@ -9,9 +9,7 @@ import { useAuthStore } from "@/store/auth.store";
 
 export default function GuestLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [hydrated, setHydrated] = useState(
-    () => useAuthStore.persist?.hasHydrated?.() ?? false
-  );
+  const [hydrated, setHydrated] = useState(false);
   const sessionUser = useAuthStore((state) => state.session?.user);
   const tokens = useAuthStore((state) => state.tokens);
 
