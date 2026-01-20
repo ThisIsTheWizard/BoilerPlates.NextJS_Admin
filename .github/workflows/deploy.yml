@@ -1,0 +1,32 @@
+name: Deploy To Server
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Get Latest Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Add Environment Variables
+        run: |
+          echo "NEXT_PUBLIC_API_URL=https://${{ secrets.WIZARD_CLOUD_API_DOMAIN }}" >> .env
+          echo "NEXT_PUBLIC_WS_URL=wss://${{ secrets.WIZARD_CLOUD_API_DOMAIN }}/graphql" >> .env
+          echo "NEXTAUTH_SECRET=${{ secrets.NEXT_AUTH_SECRET }}" >> .env
+
+      - name: 🏗️ Build The Application
+        run: docker build -f ./Dockerfile.Prod -t next-admin:latest .
+
+      - name: 🔐 Login To Server Registry
+        run: echo "${{ secrets.SERVER_REGISTRY_PASSWORD }}" | docker login -u ${{ secrets.SERVER_REGISTRY_USERNAME }} --password-stdin ${{ secrets.SERVER_REGISTRY }}
+
+      - name: 🏷️ Tag Docker Image For Server Registry
+        run: docker tag next-admin:latest ${{ secrets.SERVER_REGISTRY }}/next-admin:latest
+
+      - name: 📤 Push Docker Image To Server Registry
+        run: docker push ${{ secrets.SERVER_REGISTRY }}/next-admin:latest

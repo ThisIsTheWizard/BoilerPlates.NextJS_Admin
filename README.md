@@ -78,7 +78,7 @@ cp .env.example .env
 Example:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXTAUTH_SECRET=replace-with-a-32-char-random-value
 ```
 
@@ -132,7 +132,7 @@ Each page composes these operations with Apollo hooks while keeping UI feedback 
 
 ## 🤝 Working with the Backend
 
-This frontend pairs with **BoilerPlates.Express_GraphQL**. Ensure that project is running (Docker or local) so GraphQL queries hit a live endpoint. Adjust `NEXT_PUBLIC_API_BASE_URL` if the backend runs on a different host/port.
+This frontend pairs with **BoilerPlates.Express_GraphQL**. Ensure that project is running (Docker or local) so GraphQL queries hit a live endpoint. Adjust `NEXT_PUBLIC_API_URL` if the backend runs on a different host/port.
 
 ---
 
