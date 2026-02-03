@@ -4,14 +4,9 @@ Dockerfile.*
 node_modules
 npm-debug.log
 README.md
-dist
-build
-coverage
 .next
+.nuxt
+.nest
 .git
 .gitignore
 .DS_Store
-.env
-.env.local
-.env.*
-!.env.example
