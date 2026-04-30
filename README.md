@@ -144,5 +144,5 @@ Feel free to fork, adapt, and extend the dashboard for your own role/permission 
 
 ---
 
-👋 Created by [Elias Shekh](https://portfolio.wizardcld.com)
+👋 Created by [Elias Shekh](https://eliasshekh.com)
 If you find this useful, ⭐ the repo or reach out!
