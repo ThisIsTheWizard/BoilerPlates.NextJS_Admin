@@ -46,21 +46,3 @@ jobs:
           tags: ${{ secrets.SERVER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: 🚀 Deploy To Server
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_PRIVATE_KEY }}
-          script: |
-            cd "${{ secrets.DOCKER_COMPOSER_DIRECTORY }}"
-
-            echo "Pull latest images..."
-            docker compose pull ${{ env.SERVICE_NAME }}
-
-            echo "Recreating ${{ env.SERVICE_NAME }}..."
-            docker compose up -d --no-deps ${{ env.SERVICE_NAME }}
-
-            echo "Prune images..."
-            docker image prune -f
